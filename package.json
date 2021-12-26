@@ -1,0 +1,24 @@
+{
+  "name": "tddms-api",
+  "version": "1.0.0",
+  "description": "Tomato Disease Detector and management System",
+  "main": "./src/app.js",
+  "scripts": {
+    "start": "node ./src/app.js",
+    "dev": "env-cmd ./config/dev.env nodemon ./src/app.js"
+  },
+  "author": "Joseph CYIZA",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.0.1",
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^6.0.12"
+  },
+  "devDependencies": {
+    "env-cmd": "^8.0.2",
+    "nodemon": "^2.0.15"
+  }
+}
