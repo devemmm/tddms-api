@@ -23,20 +23,16 @@ const signin = [
       const user = await User.findByCredentials(phone, password)
       await user.generateAuthToken()
 
-      res
-        .status(200)
-        .json({
-          statusCode: 200,
-          status: 'successfull',
-          message: 'you are logged in',
-          user,
-        })
+      res.status(200).json({
+        statusCode: 200,
+        status: 'successfull',
+        message: 'you are logged in',
+        user,
+      })
     } catch (error) {
-      res
-        .status(400)
-        .json({
-          error: { statusCode: 400, status: 'failed', message: error.message },
-        })
+      res.status(400).json({
+        error: { statusCode: 400, status: 'failed', message: error.message },
+      })
     }
   },
 ]
@@ -72,20 +68,16 @@ const signup = [
 
       const token = await user.generateAuthToken()
 
-      res
-        .status(200)
-        .json({
-          statusCode: 201,
-          message: 'account created successfull',
-          status: 'successfull',
-          user,
-        })
+      res.status(200).json({
+        statusCode: 201,
+        message: 'account created successfull',
+        status: 'successfull',
+        user,
+      })
     } catch (error) {
-      res
-        .status(400)
-        .json({
-          error: { statusCode: 400, status: 'failed', message: error.message },
-        })
+      res.status(400).json({
+        error: { statusCode: 400, status: 'failed', message: error.message },
+      })
     }
   },
 ]
@@ -154,9 +146,33 @@ const getReportedDisease = [
         })
       }
 
-      const disease = await InfectedTomato.find({})
+      const diseases = await InfectedTomato.find({})
 
-      res.json({ disease })
+      let filteredDisease = []
+
+      switch (userType) {
+        case 'sector':
+          filteredDisease = diseases.filter(
+            (dis) => dis.observation.sector.admitted === false
+          )
+          break
+
+        case 'district':
+          filteredDisease = diseases.filter(
+            (dis) =>
+              dis.observation.sector.admitted === true &&
+              dis.observation.district.admitted == false
+          )
+          break
+
+        case 'rab':
+          filteredDisease = diseases
+          break
+        default:
+          break
+      }
+
+      res.json({ disease: filteredDisease })
     } catch (error) {
       res.json({ error: { status: 400, message: error.message } })
     }
@@ -296,20 +312,16 @@ const registerUser = [
       }
       await user.save()
 
-      res
-        .status(200)
-        .json({
-          statusCode: 201,
-          message: 'account created successfull',
-          status: 'successfull',
-          user,
-        })
+      res.status(200).json({
+        statusCode: 201,
+        message: 'account created successfull',
+        status: 'successfull',
+        user,
+      })
     } catch (error) {
-      res
-        .status(400)
-        .json({
-          error: { statusCode: 400, status: 'failed', message: error.message },
-        })
+      res.status(400).json({
+        error: { statusCode: 400, status: 'failed', message: error.message },
+      })
     }
   },
 ]
@@ -328,11 +340,9 @@ const findAllUser = [
 
       res.json({ users })
     } catch (error) {
-      res
-        .status(400)
-        .json({
-          error: { statusCode: 400, status: 'failed', message: error.message },
-        })
+      res.status(400).json({
+        error: { statusCode: 400, status: 'failed', message: error.message },
+      })
     }
   },
 ]
