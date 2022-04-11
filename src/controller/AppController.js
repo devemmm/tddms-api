@@ -104,11 +104,12 @@ const generateReport = [
   async (req, res) => {
     try {
       const { location, phone, fname, lname } = req.user
+      const { name, description } = req.body;
 
-      const disease = {
-        name: 'Tomato Septoria',
-        description: 'this tomato huwekjfergggggggggggggggggggggggg',
+      if(!name  || !description){
+        return res.json({error: {message: 'missing some required information'}})
       }
+      const disease = { name, description }
 
       const report = new InfectedTomato({
         ...{
