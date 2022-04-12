@@ -7,11 +7,15 @@ const {
     deleteUser, 
     registerUser, 
     findAllUser, 
-    underMentainance} = require('../controller/AppController')
+    underMentainance,
+    updateAccount
+} = require('../controller/AppController')
 
 const router = express.Router();
 
 router.post('/users/signout', signout)
+
+router.patch('/users/profile', updateAccount)
 
 //------------------ FARMER--------------------------------
 

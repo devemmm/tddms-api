@@ -347,6 +347,113 @@ const findAllUser = [
     }
   },
 ]
+
+const updateAccount = [
+  requireAuth,
+  async (req, res) =>{
+
+    try{
+    
+     
+      const { userType, phone, fname, lname, location, currentPassword, newPassword, confirmPassword } = req.body
+
+      let type = req.query.type
+
+      if(!type){
+        type = "info"
+      }
+
+      switch(type){
+        case 'password':
+          if(!currentPassword || !newPassword || !confirmPassword){
+            throw new Error('missing some required values')
+          }
+
+          if(newPassword !== confirmPassword){
+            throw new Error("password doesn't match")
+          }
+
+          const user = await User.findByCredentials(req.user.phone, currentPassword)
+          if(!user){
+            throw new Error("wrong old password")
+          }
+
+          user.password = newPassword
+
+          await user.save();
+
+          return res.status(200).json({
+            statusCode: 200,
+            message: 'password updated successfull',
+            status: 'successfull',
+            user,
+          })
+
+        case "userType":
+
+          
+          if(!req.user.userType === "district"){
+            throw new Error("you are not allowed to perform this action")
+          }
+
+          if(!phone){
+            throw new Error("user to update required")
+          }
+
+          if(!userType){
+            throw new Error("please specify the his/her user_type")
+          }
+
+          const userToUpdate = await User.findOneAndUpdate({phone: phone}, {userType})
+
+          if(!userToUpdate){
+            throw new Error("user not found")
+          }
+
+          return res.status(200).json({
+            statusCode: 200,
+            message: 'user account updated successfull',
+            status: 'successfull',
+            user: userToUpdate,
+          })
+        default:
+
+          if(!fname || !lname || !location){
+            throw new Error("missing some required information")
+          }
+
+          const { country, province, district, sector, cell } = location
+
+          if(!country || !province || !district || !sector || !cell){
+            throw new Error("missing some required information")
+          }
+
+          const userData = req.user;
+
+          userData.fname = fname;
+          userData.lname = lname;
+          userData.location = location;
+
+          await userData.save();
+
+          return res.status(200).json({
+            statusCode: 200,
+            message: 'user account updated successfull',
+            status: 'successfull',
+            user: userData,
+          })
+      }
+
+
+    }catch(error){
+      res.status(400).json({
+        error: { statusCode: 400, status: 'failed', message: error.message },
+      })
+    }
+  }
+]
+
+
 const underMentainance = [
   (req, res) => {
     try {
@@ -374,6 +481,7 @@ module.exports = {
   deleteUser,
   registerUser,
   findAllUser,
+  updateAccount,
   underMentainance,
   notFound,
 }
