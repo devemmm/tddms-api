@@ -1,47 +1,52 @@
-const User = require('../model/User')
-const InfectedTomato = require('../model/InfectedTomato')
-const { isExistUser } = require('../helps/helpFunction')
-const requireAuth = require('../middleware/requireAuth')
+const fs = require("fs");
+const nodemailer = require("nodemailer");
+const json2xls = require("json2xls");
+const filename = "tddu_users.xlsx";
+
+const User = require("../model/User");
+const InfectedTomato = require("../model/InfectedTomato");
+const { isExistUser } = require("../helps/helpFunction");
+const requireAuth = require("../middleware/requireAuth");
 
 const index = [
   (req, res) => {
-    res.json({ status: 200, message: 'successfull' })
+    res.json({ status: 200, message: "successfull" });
   },
-]
+];
 
 const signin = [
   async (req, res) => {
-    const { phone, password } = req.body
+    const { phone, password } = req.body;
     try {
       if (!phone) {
-        throw new Error('phone required')
+        throw new Error("phone required");
       }
 
       if (!password) {
-        throw new Error('password required')
+        throw new Error("password required");
       }
-      const user = await User.findByCredentials(phone, password)
-      await user.generateAuthToken()
+      const user = await User.findByCredentials(phone, password);
+      await user.generateAuthToken();
 
       res.status(200).json({
         statusCode: 200,
-        status: 'successfull',
-        message: 'you are logged in',
+        status: "successfull",
+        message: "you are logged in",
         user,
-      })
+      });
     } catch (error) {
       res.status(400).json({
-        error: { statusCode: 400, status: 'failed', message: error.message },
-      })
+        error: { statusCode: 400, status: "failed", message: error.message },
+      });
     }
   },
-]
+];
 
 const signup = [
   async (req, res) => {
     try {
       const { fname, lname, gender, phone, location, email, password } =
-        req.body
+        req.body;
 
       if (
         !email ||
@@ -52,35 +57,35 @@ const signup = [
         !location ||
         !password
       ) {
-        throw new Error('missing some required information')
+        throw new Error("missing some required information");
       }
 
       const user = new User({
         ...req.body,
-      })
+      });
 
-      const isValidUser = await isExistUser(user.phone)
+      const isValidUser = await isExistUser(user.phone);
 
       if (isValidUser) {
-        throw new Error('user alredy exist in system')
+        throw new Error("user alredy exist in system");
       }
-      await user.save()
+      await user.save();
 
-      const token = await user.generateAuthToken()
+      const token = await user.generateAuthToken();
 
       res.status(200).json({
         statusCode: 201,
-        message: 'account created successfull',
-        status: 'successfull',
+        message: "account created successfull",
+        status: "successfull",
         user,
-      })
+      });
     } catch (error) {
       res.status(400).json({
-        error: { statusCode: 400, status: 'failed', message: error.message },
-      })
+        error: { statusCode: 400, status: "failed", message: error.message },
+      });
     }
   },
-]
+];
 
 const signout = [
   requireAuth,
@@ -88,28 +93,30 @@ const signout = [
     try {
       req.user.tokens = req.user.tokens.filter(
         (token) => token.token !== req.token
-      )
+      );
 
-      await req.user.save()
+      await req.user.save();
 
-      res.status(200).send({ status: 200, message: 'successfully' })
+      res.status(200).send({ status: 200, message: "successfully" });
     } catch (error) {
-      res.json({ error: { status: 400, message: error.message } })
+      res.json({ error: { status: 400, message: error.message } });
     }
   },
-]
+];
 
 const generateReport = [
   requireAuth,
   async (req, res) => {
     try {
-      const { location, phone, fname, lname } = req.user
+      const { location, phone, fname, lname } = req.user;
       const { name, description } = req.body;
 
-      if(!name  || !description){
-        return res.json({error: {message: 'missing some required information'}})
+      if (!name || !description) {
+        return res.json({
+          error: { message: "missing some required information" },
+        });
       }
-      const disease = { name, description }
+      const disease = { name, description };
 
       const report = new InfectedTomato({
         ...{
@@ -121,174 +128,174 @@ const generateReport = [
           location,
           disease,
         },
-      })
+      });
 
-      await report.save()
+      await report.save();
 
-      res.json({ status: 200, message: 'successfull', report })
+      res.json({ status: 200, message: "successfull", report });
     } catch (error) {
-      res.json({ error: { status: 400, message: error.message } })
+      res.json({ error: { status: 400, message: error.message } });
     }
   },
-]
+];
 
 const getReportedDisease = [
   requireAuth,
   async (req, res) => {
     try {
-      const { userType } = req.user
+      const { userType } = req.user;
 
-      if (userType === 'farmer') {
+      if (userType === "farmer") {
         return res.json({
           error: {
             status: 401,
-            message: 'please you are not allowed to perform this action',
+            message: "please you are not allowed to perform this action",
           },
-        })
+        });
       }
 
-      const diseases = await InfectedTomato.find({})
+      const diseases = await InfectedTomato.find({});
 
-      let filteredDisease = []
+      let filteredDisease = [];
 
       switch (userType) {
-        case 'sector':
+        case "sector":
           filteredDisease = diseases.filter(
             (dis) => dis.observation.sector.admitted === false
-          )
-          break
+          );
+          break;
 
-        case 'district':
+        case "district":
           filteredDisease = diseases.filter(
             (dis) =>
               dis.observation.sector.admitted === true &&
               dis.observation.district.admitted == false
-          )
-          break
+          );
+          break;
 
-        case 'rab':
-          filteredDisease = diseases
-          break
+        case "rab":
+          filteredDisease = diseases;
+          break;
         default:
-          break
+          break;
       }
 
-      res.json({ disease: filteredDisease })
+      res.json({ disease: filteredDisease });
     } catch (error) {
-      res.json({ error: { status: 400, message: error.message } })
+      res.json({ error: { status: 400, message: error.message } });
     }
   },
-]
+];
 
 const approveReport = [
   requireAuth,
   async (req, res) => {
     try {
-      const { userType } = req.user
-      const { canSolve, comments, admitted } = req.body
+      const { userType } = req.user;
+      const { canSolve, comments, admitted } = req.body;
 
-      const _id = req.params.id
+      const _id = req.params.id;
 
-      const report = await InfectedTomato.findById({ _id })
+      const report = await InfectedTomato.findById({ _id });
 
       if (!report) {
         return res.json({
           error: {
             status: 404,
-            message: 'there is no report found for this disease id',
+            message: "there is no report found for this disease id",
           },
-        })
+        });
       }
 
       switch (userType) {
-        case 'sector':
+        case "sector":
           const sector = {
-            agro: req.user.fname + ' ' + req.user.lname,
+            agro: req.user.fname + " " + req.user.lname,
             ...req.body,
-          }
+          };
 
-          report.observation.sector = sector
+          report.observation.sector = sector;
 
-          await report.save()
+          await report.save();
 
-          return res.json({ status: 204, message: 'successfull', report })
-        case 'district':
+          return res.json({ status: 204, message: "successfull", report });
+        case "district":
           const district = {
-            agro: req.user.fname + ' ' + req.user.lname,
+            agro: req.user.fname + " " + req.user.lname,
             ...req.body,
-          }
+          };
 
-          report.observation.district = district
-          await report.save()
+          report.observation.district = district;
+          await report.save();
 
-          return res.json({ status: 204, message: 'successfull', report })
+          return res.json({ status: 204, message: "successfull", report });
 
-        case 'rab':
+        case "rab":
           const rab = {
-            agro: req.user.fname + ' ' + req.user.lname,
+            agro: req.user.fname + " " + req.user.lname,
             ...req.body,
-          }
+          };
 
-          report.observation.rab = rab
+          report.observation.rab = rab;
 
-          await report.save()
+          await report.save();
 
-          return res.json({ status: 204, message: 'successfull', report })
+          return res.json({ status: 204, message: "successfull", report });
 
         default:
-          throw new Error('you are not allowed to perform this action')
+          throw new Error("you are not allowed to perform this action");
       }
     } catch (error) {
-      res.json({ error: { status: 400, message: error.message } })
+      res.json({ error: { status: 400, message: error.message } });
     }
   },
-]
+];
 
 const deleteUser = [
   requireAuth,
   async (req, res) => {
     try {
-      const { userType } = req.user
+      const { userType } = req.user;
 
-      console.log(userType)
+      console.log(userType);
 
-      if (userType !== 'rab') {
+      if (userType !== "rab") {
         throw new Error(
-          req.user.fname + ' ' + 'you are not allowed to perform this action'
-        )
+          req.user.fname + " " + "you are not allowed to perform this action"
+        );
       }
 
-      console.log(req.params.phone)
+      console.log(req.params.phone);
 
-      const result = await User.deleteOne({ phone: req.params.phone })
+      const result = await User.deleteOne({ phone: req.params.phone });
 
       if (result.deletedCount !== 1) {
         throw new Error(
-          'user not found for this phone number',
+          "user not found for this phone number",
           req.params.phone
-        )
+        );
       }
 
-      res.send({ status: 200, message: 'user deleted', result })
+      res.send({ status: 200, message: "user deleted", result });
     } catch (error) {
-      res.json({ error: { status: 400, message: error.message } })
+      res.json({ error: { status: 400, message: error.message } });
     }
   },
-]
+];
 
 const registerUser = [
   requireAuth,
   async (req, res) => {
     try {
-      const { userType } = req.user
+      const { userType } = req.user;
 
-      if (userType !== 'rab') {
+      if (userType !== "rab") {
         throw new Error(
-          req.user.fname + ' ' + 'you are not allowed to perform this action'
-        )
+          req.user.fname + " " + "you are not allowed to perform this action"
+        );
       }
       const { fname, lname, gender, phone, location, email, password } =
-        req.body
+        req.body;
 
       if (
         !email ||
@@ -299,133 +306,154 @@ const registerUser = [
         !location ||
         !password
       ) {
-        throw new Error('missing some required information')
+        throw new Error("missing some required information");
       }
 
       const user = new User({
         ...req.body,
-      })
+      });
 
-      const isValidUser = await isExistUser(user.phone)
+      const isValidUser = await isExistUser(user.phone);
 
       if (isValidUser) {
-        throw new Error('user alredy exist in system')
+        throw new Error("user alredy exist in system");
       }
-      await user.save()
+      await user.save();
+      const token = await user.generateAuthToken();
 
       res.status(200).json({
         statusCode: 201,
-        message: 'account created successfull',
-        status: 'successfull',
+        message: "account created successfull",
+        status: "successfull",
         user,
-      })
+      });
     } catch (error) {
       res.status(400).json({
-        error: { statusCode: 400, status: 'failed', message: error.message },
-      })
+        error: { statusCode: 400, status: "failed", message: error.message },
+      });
     }
   },
-]
+];
+
+const convert = function (responses) {
+  var xls = json2xls(responses);
+  fs.writeFileSync(`./public/${filename}`, xls, "binary", (err) => {
+    if (err) {
+      console.log("writeFileSync :", err);
+    }
+    console.log(filename + " file is saved!");
+  });
+};
 
 const findAllUser = [
   requireAuth,
   async (req, res) => {
     try {
-      if (req.user.userType !== 'rab') {
+      if (req.user.userType !== "rab") {
         throw new Error(
-          req.user.fname + ' ' + 'you are not allowed to perform this action'
-        )
+          req.user.fname + " " + "you are not allowed to perform this action"
+        );
       }
+      const users = await User.find({});
+      console.log(users);
+      convert(users);
 
-      const users = await User.find({})
-
-      res.json({ users })
+      return res.json({ users });
     } catch (error) {
       res.status(400).json({
-        error: { statusCode: 400, status: 'failed', message: error.message },
-      })
+        error: { statusCode: 400, status: "failed", message: error.message },
+      });
     }
   },
-]
+];
 
 const updateAccount = [
   requireAuth,
-  async (req, res) =>{
+  async (req, res) => {
+    try {
+      const {
+        userType,
+        phone,
+        fname,
+        lname,
+        location,
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      } = req.body;
 
-    try{
-    
-     
-      const { userType, phone, fname, lname, location, currentPassword, newPassword, confirmPassword } = req.body
+      let type = req.query.type;
 
-      let type = req.query.type
-
-      if(!type){
-        type = "info"
+      if (!type) {
+        type = "info";
       }
 
-      switch(type){
-        case 'password':
-          if(!currentPassword || !newPassword || !confirmPassword){
-            throw new Error('missing some required values')
+      switch (type) {
+        case "password":
+          if (!currentPassword || !newPassword || !confirmPassword) {
+            throw new Error("missing some required values");
           }
 
-          if(newPassword !== confirmPassword){
-            throw new Error("password doesn't match")
+          if (newPassword !== confirmPassword) {
+            throw new Error("password doesn't match");
           }
 
-          const user = await User.findByCredentials(req.user.phone, currentPassword)
-          if(!user){
-            throw new Error("wrong old password")
+          const user = await User.findByCredentials(
+            req.user.phone,
+            currentPassword
+          );
+          if (!user) {
+            throw new Error("wrong old password");
           }
 
-          user.password = newPassword
+          user.password = newPassword;
 
           await user.save();
 
           return res.status(200).json({
             statusCode: 200,
-            message: 'password updated successfull',
-            status: 'successfull',
+            message: "password updated successfull",
+            status: "successfull",
             user,
-          })
+          });
 
         case "userType":
-
-          
-          if(!req.user.userType === "district"){
-            throw new Error("you are not allowed to perform this action")
+          if (!req.user.userType === "district") {
+            throw new Error("you are not allowed to perform this action");
           }
 
-          if(!phone){
-            throw new Error("user to update required")
+          if (!phone) {
+            throw new Error("user to update required");
           }
 
-          if(!userType){
-            throw new Error("please specify the his/her user_type")
+          if (!userType) {
+            throw new Error("please specify the his/her user_type");
           }
 
-          const userToUpdate = await User.findOneAndUpdate({phone: phone}, {userType})
+          const userToUpdate = await User.findOneAndUpdate(
+            { phone: phone },
+            { userType }
+          );
 
-          if(!userToUpdate){
-            throw new Error("user not found")
+          if (!userToUpdate) {
+            throw new Error("user not found");
           }
 
           return res.status(200).json({
             statusCode: 200,
-            message: 'user account updated successfull',
-            status: 'successfull',
+            message: "user account updated successfull",
+            status: "successfull",
             user: userToUpdate,
-          })
+          });
         default:
-
-          if(!fname || !lname || !location){
-            throw new Error("missing some required information")
+          if (!fname || !lname || !location) {
+            throw new Error("missing some required information");
           }
 
-          const { country, province, district, sector, cell } = location
+          const { country, province, district, sector, cell } = location;
 
-          if(!country || !province || !district || !sector || !cell){
-            throw new Error("missing some required information")
+          if (!country || !province || !district || !sector || !cell) {
+            throw new Error("missing some required information");
           }
 
           const userData = req.user;
@@ -438,37 +466,34 @@ const updateAccount = [
 
           return res.status(200).json({
             statusCode: 200,
-            message: 'user account updated successfull',
-            status: 'successfull',
+            message: "user account updated successfull",
+            status: "successfull",
             user: userData,
-          })
+          });
       }
-
-
-    }catch(error){
+    } catch (error) {
       res.status(400).json({
-        error: { statusCode: 400, status: 'failed', message: error.message },
-      })
+        error: { statusCode: 400, status: "failed", message: error.message },
+      });
     }
-  }
-]
-
+  },
+];
 
 const underMentainance = [
   (req, res) => {
     try {
-      res.json({ status: 200, message: 'system under developmenet' })
+      res.json({ status: 200, message: "system under developmenet" });
     } catch (error) {
-      res.json({ error: { status: 400, message: error.message } })
+      res.json({ error: { status: 400, message: error.message } });
     }
   },
-]
+];
 
 const notFound = [
   (req, res) => {
-    res.json({ error: { status: 404, message: 'Router not found' } })
+    res.json({ error: { status: 404, message: "Router not found" } });
   },
-]
+];
 
 module.exports = {
   index,
@@ -484,4 +509,4 @@ module.exports = {
   updateAccount,
   underMentainance,
   notFound,
-}
+};
