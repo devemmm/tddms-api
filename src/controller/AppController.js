@@ -561,7 +561,7 @@ const pushReport = [
       // Step 3
       transporter.sendMail(mailOptions, function (err, data) {
         if (err) {
-          return res.send({ error: err })
+          console.log(err.message)
         } else {
           return "email sent successfull !!!"
         }
