@@ -506,23 +506,23 @@ const pushReport = [
 
       if (reqData?.type === 'dis' && req.user.userType === "rab") {
 
-        const infectedTomato = await InfectedTomato.find({}, { _id: 0, observation: 0 })
+        const infectedTomato = await InfectedTomato.find({}, { _id: 0, observation: 0 }).lean()
         datatoSend = infectedTomato;
       }
 
       if (reqData?.type === 'user' && req.user.userType === "rab") {
-        const user = await User.find({}, { _id: 0, location: 0, tokens: 0, password: 0 })
+        const user = await User.find({}, { _id: 0, location: 0, tokens: 0, password: 0 }).lean()
         datatoSend = user;
       }
 
       if (reqData?.type === "dis" && req.user.userType === "farmer") {
 
-        const inftectedTomatoContainer = await InfectedTomato.find({}, { _id: 0, observation: 0 })
+        const inftectedTomatoContainer = await InfectedTomato.find({}, { _id: 0, observation: 0 }).lean()
         let filertedData = inftectedTomatoContainer.filter((item) => item.farmer.phone = "0788596281")
         datatoSend = filertedData;
       }
 
-      converttoxlsx(datatoSend);
+      converttoxlsx(datatoSend)
       const output = `
             <p>Tomato Disease Detector</p>
             <h3>Contact Details</h3>
