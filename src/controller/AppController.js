@@ -542,11 +542,11 @@ const pushReport = [
         }
       })
 
+
       // Step 2
       let mailOptions = {
         from: 'primaryemmy@gmail.com',
-        // to: `${req.user.email}`,
-        to: 'djntivuguruzwaemmanuel@gmail.com',
+        to: `${req.user.email}`,
         subject: "Tomato Disease Detector",
         text: "heading",
         html: output,
