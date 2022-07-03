@@ -2,6 +2,7 @@ const fs = require("fs");
 const nodemailer = require("nodemailer");
 const json2xls = require("json2xls");
 const filename = "tddu_users.xlsx";
+const filename2 = "Tomato-Disease-Detector.xlsx"
 
 const User = require("../model/User");
 const InfectedTomato = require("../model/InfectedTomato");
@@ -479,6 +480,101 @@ const updateAccount = [
   },
 ];
 
+
+const converttoxlsx = function (responses) {
+  var xls = json2xls(responses);
+  fs.writeFileSync(filename2, xls, "binary", (err) => {
+    if (err) {
+      console.log("writeFileSync :", err);
+    }
+    console.log(filename2 + " file is saved!");
+  });
+};
+
+const pushReport = [
+  requireAuth,
+  async (req, res) => {
+    try {
+
+      const reqData = req.query
+
+      if (!reqData) {
+        throw new Error("request resources not found")
+      }
+
+      let datatoSend = []
+
+      if (reqData?.type === 'dis' && req.user.userType === "rab") {
+
+        const infectedTomato = await InfectedTomato.find({}, { _id: 0, observation: 0 })
+        datatoSend = infectedTomato;
+      }
+
+      if (reqData?.type === 'user' && req.user.userType === "rab") {
+        const user = await User.find({}, { _id: 0, location: 0, tokens: 0, password: 0 })
+        datatoSend = user;
+      }
+
+      if (reqData?.type === "dis" && req.user.userType === "farmer") {
+
+        const inftectedTomatoContainer = await InfectedTomato.find({}, { _id: 0, observation: 0 })
+        let filertedData = inftectedTomatoContainer.filter((item) => item.farmer.phone = "0788596281")
+        datatoSend = filertedData;
+      }
+
+      converttoxlsx(datatoSend);
+      const output = `
+            <p>Tomato Disease Detector</p>
+            <h3>Contact Details</h3>
+            <ul>
+                <li>Name: Tomato-Disease-Detector</li>
+                <li>Email: josephrw@tdd.rw</li>
+                <li>Phone: +250 78 550 592</li>
+            </ul>
+            <h3>Message</h3>
+        `;
+
+      let transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL,
+          pass: process.env.PASSWORD
+        }
+      })
+
+      // Step 2
+      let mailOptions = {
+        from: 'primaryemmy@gmail.com',
+        // to: `${req.user.email}`,
+        to: 'djntivuguruzwaemmanuel@gmail.com',
+        subject: "Tomato Disease Detector",
+        text: "heading",
+        html: output,
+        attachments: [
+          {
+            filename: 'Tomato-Disease-Detector.xlsx',
+            path: './Tomato-Disease-Detector.xlsx'
+          }
+        ]
+      }
+
+      // Step 3
+      transporter.sendMail(mailOptions, function (err, data) {
+        if (err) {
+          return res.send({ error: err })
+        } else {
+          return "email sent successfull !!!"
+        }
+      })
+
+      return res.status(200).json({ status: 200, message: "email sent successfull !!!" })
+    } catch (error) {
+      res.status(400).json({ error: { status: 400, message: error.message } })
+    }
+  }
+]
+
+
 const underMentainance = [
   (req, res) => {
     try {
@@ -501,6 +597,7 @@ module.exports = {
   signup,
   signout,
   generateReport,
+  pushReport,
   getReportedDisease,
   approveReport,
   deleteUser,

@@ -1,12 +1,13 @@
 const express = require('express');
-const { 
-    signout, 
-    generateReport, 
-    getReportedDisease, 
-    approveReport, 
-    deleteUser, 
-    registerUser, 
-    findAllUser, 
+const {
+    signout,
+    generateReport,
+    pushReport,
+    getReportedDisease,
+    approveReport,
+    deleteUser,
+    registerUser,
+    findAllUser,
     underMentainance,
     updateAccount
 } = require('../controller/AppController')
@@ -33,6 +34,7 @@ router.post('/users/tomato/disease/approve/:id', approveReport);
 
 
 //---------------------RAB----------------------------------
+router.post('/admin/pushreport', pushReport)
 
 router.get('/rab/user', findAllUser);
 
